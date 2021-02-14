@@ -52,6 +52,11 @@ class MySettings(PropertyGroup):
         description="Whether the animation loops",
         default=True
     )
+    mirrormode: BoolProperty(
+        name="Duplicate and mirror",
+        description="Generate a walk cycle from a single step",
+        default=False
+    )
     varspeed: BoolProperty(
         name="Variable speed walk",
         description="Whether walk anim should be unitspeed dependant",
@@ -104,6 +109,7 @@ class Skelepanel(bpy.types.Panel):
         row = layout.row()
         row.operator('skele.skeletoroperator', text='1. Create Skeleton')
         layout.prop(mytool, "is_walk", text="Is Walk Script")
+        layout.prop(mytool, "mirrormode", text="Mirror mode")
         layout.prop(mytool, "varspeed", text="Variable speed")
         layout.prop(mytool, "varscale", text="Variable scale")
         layout.prop(mytool, "varamplitude", text="Variable amplitude")
@@ -784,7 +790,9 @@ class SkeletorBOSMaker(bpy.types.Operator):
                         p = p.parent
         
         print("Gathering animdata")
-        
+
+        frame_time_before_midpoint = sorted(animframes.keys())[-2]
+
         for frame_time in sorted(animframes.keys()):
             print("SETTING FRAMETIME", frame_time)
             bpy.context.scene.frame_set(frame_time)
@@ -830,7 +838,37 @@ class SkeletorBOSMaker(bpy.types.Operator):
                             animframes[frame_time][bone_name] = {}
                         print('adding', frame_time, bone_name, 'rot' + str(axis), value)
                         animframes[frame_time][bone_name]['rot' + str(axis)] = degrees(value)
-        
+                        if context.scene.my_tool.mirrormode:
+                            def differentLetters(word1, word2):
+                                different = 0
+                                for index, letter in enumerate(word1):
+                                    try:
+                                        if letter != word2[index]:
+                                            different += 1
+                                    except IndexError:
+                                        different += 100
+                                return different
+
+                            def get_mirrored(bone_name):
+                                mirrored_bones = {}
+                                for bone in bonesinIKchains:
+                                    for otherBone in bonesinIKchains:
+                                        if differentLetters(bone, otherBone) == 2:
+                                            matchingBone = otherBone[:-2]
+                                    mirrored_bones[bone[:-2]] = matchingBone
+                                return mirrored_bones[bone_name]
+
+                            mirrored_bone_name = get_mirrored(bone_name)
+                            mirrored_frame_time = frame_time + frame_time_before_midpoint
+
+                            if mirrored_frame_time not in animframes:
+                                animframes[mirrored_frame_time] = {}
+                            if mirrored_bone_name not in animframes[mirrored_frame_time]:
+                                animframes[mirrored_frame_time][mirrored_bone_name] = {}
+                                
+                            print('adding', mirrored_frame_time, mirrored_bone_name, 'rot' + str(axis), value)
+                            animframes[mirrored_frame_time][mirrored_bone_name]['rot' + str(axis)] = degrees(value)
+
         print("Animframes:", animframes)
         self.write_file(context=context, animframes=animframes, piecehierarchy=piecehierarchy)
         print("bonesinIKchains:", bonesinIKchains)
