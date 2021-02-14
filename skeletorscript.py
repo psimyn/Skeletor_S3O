@@ -1296,13 +1296,13 @@ local function Walk()
             # turn values and speeds probably need to be converted to radians
             outf.write("""
 -- use StartThread(DeathAnim) from Killed()
-local function DeathAnim() { -- %s
+local function DeathAnim() -- %s
 \tSignal(SIG_WALK)
 \tSignal(SIG_AIM)
 \tStartThread(StopWalking()
-\tturn aimy1 to y-axis <0> speed <120>
-\tturn aimx1 to x-axis <0> speed <120>
-""" % (INFOSTRING))
+\tTurn(aimy1, y_axis, 0, %d)
+\tTurn(aimx1, x_axis, 0, %d)
+""" % (INFOSTRING, radians(120), radians(120)))
         else:
             outf.write("-- Startthread(Animate) -- from RestoreAfterDelay\n")
             # TODO not walk scripts
