@@ -82,6 +82,10 @@ class MySettings(PropertyGroup):
         description="Unit dies, move pieces far to explode them",
         default=False
     )
+    output_filepath: StringProperty(
+        name="Output filename",
+        default=""
+    )
 
 
 class Skelepanel(bpy.types.Panel):
@@ -109,6 +113,7 @@ class Skelepanel(bpy.types.Panel):
         layout.prop(mytool, "varamplitude", text="Variable amplitude")
         layout.prop(mytool, "firstframestance", text="First Frame Stance")
         layout.prop(mytool, "is_death", text="Is Death Script")
+        layout.prop(mytool, "output_filepath", text="Output filepath")
         row = layout.row()
         row.operator('skele.skeletorbosmaker', text='2. Create BOS')
         row = layout.row()
@@ -1203,6 +1208,15 @@ class SkeletorLUSMaker(SkeletorBOSMaker):
         
         newfile_name = filepath + ".lua_export.lua"
         outf = open(newfile_name, 'w')
+        # if custom filepath is configured, append to that
+        # else save a new file named after the .blend file 
+        newfile_name = context.scene.my_tool.output_filepath
+        mode = 'a'
+        if not newfile_name:
+            newfile_name = filepath + ".lua_export.lua"
+            mode = 'w'
+        outf = open(newfile_name, mode)
+
         outf.write("-- " + INFOSTRING + '\n')
         if VARIABLESCALE:
             outf.write("local MOVESCALE = 100 -- Higher values are bigger, 100 is default\n")
